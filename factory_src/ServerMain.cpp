@@ -15,19 +15,18 @@ std::vector<MapOp> smr_log;
 int main(int argc, char *argv[]) {
   int port;
   int engineer_cnt = 0;
-  int num_admins;
+  int num_admins = 1;
   ServerSocket socket;
   RobotFactory factory;
   std::unique_ptr<ServerSocket> new_socket;
   std::vector<std::thread> thread_vector;
 
-  if (argc < 3) {
+  if (argc < 2) {
     std::cout << "not enough arguments" << std::endl;
-    std::cout << argv[0] << "[port #] [# experts]" << std::endl;
+    std::cout << argv[0] << "[port #]" << std::endl;
     return 0;
   }
   port = atoi(argv[1]);
-  num_admins = atoi(argv[2]);
 
   for (int i = 0; i < num_admins; i++) {
     std::thread expert_thread(&RobotFactory::AdminThread, &factory,
