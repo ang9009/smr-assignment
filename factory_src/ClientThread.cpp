@@ -82,17 +82,23 @@ void ClientThreadClass::ThreadBody(std::string ip, int port, int id, int orders,
   }
 
   for (int i = 0; i < num_orders; i++) {
-    if (request_type == 1) {
+    if (request_type == RequestType::ORDER) {
       int order_num = total_ordered + i;
-      printf("Order number: %d\n", order_num);
+      // printf("Order number: %d\n", order_num);
       if (!DoOrder(customer_id, order_num)) {
         break;
       }
-    } else if (request_type == 2) {
+    } else if (request_type == RequestType::READ) {
       if (!DoReadRecord(customer_id)) {
         break;
       }
-    } else { // TODO: request type 3
+    } else if (request_type == RequestType::READ_ALL) {
+      int cid = i; // In this case, i is the customer id
+      if (!DoReadRecord(cid)) {
+        break;
+      }
+    } else {
+      printf("Request type %d not recognized\n", request_type);
     }
   }
 }

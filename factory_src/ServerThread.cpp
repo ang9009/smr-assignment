@@ -77,9 +77,9 @@ void RobotFactory::EngineerThread(std::unique_ptr<ServerSocket> socket,
 
     request_type = order.GetRequestType();
     // TODO: remove later
-    std::cout << "Received order from customer id: " << order.GetCustomerId()
-              << ", request type: " << request_type
-              << ", order id: " << order.GetOrderNumber();
+    printf(
+        "Received order from customer id: %d, request type: %d, order id: %d\n",
+        order.GetCustomerId(), request_type, order.GetOrderNumber());
 
     // If CustomerRequest has other info, print here.
     std::cout << std::endl;

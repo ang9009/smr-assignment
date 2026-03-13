@@ -3,7 +3,7 @@
 
 #include <string>
 
-enum RequestType : int { ORDER = 1, READ = 2, UNSET = -1 };
+enum RequestType : int { ORDER = 1, READ = 2, READ_ALL = 3, UNSET = -1 };
 
 class CustomerRequest {
 private:
