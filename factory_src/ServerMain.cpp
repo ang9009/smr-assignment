@@ -1,16 +1,11 @@
 #include <chrono>
 #include <iostream>
-#include <map>
 #include <mutex>
 #include <thread>
 #include <vector>
 
-#include "MapOp.h"
 #include "ServerSocket.h"
 #include "ServerThread.h"
-
-std::map<int, int> customer_record;
-std::vector<MapOp> smr_log;
 
 int main(int argc, char *argv[]) {
   int port;
@@ -21,7 +16,7 @@ int main(int argc, char *argv[]) {
   std::unique_ptr<ServerSocket> new_socket;
   std::vector<std::thread> thread_vector;
 
-  if (argc < 2) {
+  if (argc < 3) {
     std::cout << "not enough arguments" << std::endl;
     std::cout << argv[0] << "[port #]" << std::endl;
     return 0;
@@ -29,9 +24,9 @@ int main(int argc, char *argv[]) {
   port = atoi(argv[1]);
 
   for (int i = 0; i < num_admins; i++) {
-    std::thread expert_thread(&RobotFactory::AdminThread, &factory,
-                              engineer_cnt++);
-    thread_vector.push_back(std::move(expert_thread));
+    std::thread admin_thread(&RobotFactory::AdminThread, &factory,
+                             engineer_cnt++);
+    thread_vector.push_back(std::move(admin_thread));
   }
 
   if (!socket.Init(port)) {

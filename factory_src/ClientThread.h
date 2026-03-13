@@ -9,18 +9,24 @@
 #include "ClientTimer.h"
 
 class ClientThreadClass {
-	int customer_id;
-	int num_orders;
-	int robot_type;
-	ClientStub stub;
+  int customer_id;
+  int num_orders;
+  int request_type;
+  ClientStub stub;
+  ClientTimer timer;
 
-	ClientTimer timer;
+  bool
+  DoOrder(int customer_id,
+          int order_num); // order_num should be the accumulative, zero-indexed
+                          // order number, not the one in the current session
+  bool DoReadRecord(int customer_id);
+  int GetTotalOrdered(int customer_id); // returns -1 on order
+
 public:
-	ClientThreadClass();
-	void ThreadBody(std::string ip, int port, int id, int orders, int type);
+  ClientThreadClass();
+  void ThreadBody(std::string ip, int port, int id, int orders, int type);
 
-	ClientTimer GetTimer();
+  ClientTimer GetTimer();
 };
-
 
 #endif // end of #ifndef __CLIENT_THREAD_H__

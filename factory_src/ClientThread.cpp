@@ -1,35 +1,100 @@
 #include "ClientThread.h"
 #include "Messages.h"
 
-#include <iostream>
+#include <cstdio>
 
 ClientThreadClass::ClientThreadClass() {}
 
-void ClientThreadClass::ThreadBody(std::string ip, int port, int id, int orders, int type) {
-	customer_id = id;
-	num_orders = orders;
-	robot_type = type;
-	if (!stub.Init(ip, port)) {
-		std::cout << "Thread " << customer_id << " failed to connect" << std::endl;
-		return;
-	}
-	for (int i = 0; i < num_orders; i++) {
-		RobotOrder order;
-		RobotInfo robot;
-		order.SetOrder(customer_id, i, robot_type);
+int ClientThreadClass::GetTotalOrdered(int customer_id) {
+  CustomerRecord record;
+  CustomerRequest read_req;
+  read_req.SetRequest(customer_id, -1, RequestType::READ);
+  try {
+    record = stub.ReadRecord(read_req);
+    record.Print();
+  } catch (std::exception &err) {
+    printf("Request failed: %s\n", err.what());
+    return -1;
+  }
 
-		timer.Start();
-		robot = stub.OrderRobot(order);
-		timer.EndAndMerge();
-
-		if (!robot.IsValid()) {
-			std::cout << "Invalid robot " << customer_id << std::endl;
-			break;	
-		} 
-	}
+  int last_order = record.GetLastOrder(); // zero-indexed order num
+  return last_order >= 0 ? last_order + 1 : 0;
 }
 
-ClientTimer ClientThreadClass::GetTimer() {
-	return timer;	
+bool ClientThreadClass::DoOrder(int customer_id, int order_num) {
+  RobotInfo robot;
+
+  timer.Start();
+
+  CustomerRequest order_req;
+  order_req.SetRequest(customer_id, order_num, RequestType::ORDER);
+  try {
+    robot = stub.Order(order_req);
+  } catch (std::exception &err) {
+    printf("Request failed: %s\n", err.what());
+    return false;
+  }
+  robot.Print();
+  timer.EndAndMerge();
+
+  if (!robot.IsValid()) {
+    printf("Invalid robot %d\n", customer_id);
+    return false;
+  }
+
+  return true;
 }
 
+bool ClientThreadClass::DoReadRecord(int customer_id) {
+  CustomerRequest req;
+  int order_num = -1; // order num isn't necessary here
+  req.SetRequest(customer_id, order_num, RequestType::READ);
+
+  timer.Start();
+  try {
+    CustomerRecord record = stub.ReadRecord(req);
+    record.Print();
+  } catch (std::exception &err) {
+    printf("Request failed: %s\n", err.what());
+    return false;
+  }
+  timer.EndAndMerge();
+
+  return true;
+}
+
+void ClientThreadClass::ThreadBody(std::string ip, int port, int id, int orders,
+                                   int type) {
+  customer_id = id;
+  num_orders = orders;
+  request_type = type;
+  if (!stub.Init(ip, port)) {
+    printf("Thread %d failed to connect\n", customer_id);
+    return;
+  }
+
+  // Read current latest order number
+  // ! NOTE: if clients are allowed to make orders for each other, this will
+  // ! break due to race conditions with the latest order number
+  int total_ordered = GetTotalOrdered(customer_id);
+  if (total_ordered == -1) {
+    return;
+  }
+
+  for (int i = 0; i < num_orders; i++) {
+    if (request_type == 1) {
+      int order_num = total_ordered + i;
+      printf("Order number: %d\n", order_num);
+      if (!DoOrder(customer_id, order_num)) {
+        break;
+      }
+    } else if (request_type == 2) {
+      if (!DoReadRecord(customer_id)) {
+        break;
+      }
+    } else { // TODO: request type 3
+    }
+  }
+}
+
+ClientTimer ClientThreadClass::GetTimer() { return timer; }

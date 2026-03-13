@@ -8,12 +8,13 @@
 
 class ClientStub {
 private:
-	ClientSocket socket;
-public:
-	ClientStub();
-	int Init(std::string ip, int port);
-	RobotInfo OrderRobot(RobotOrder order);
-};
+  ClientSocket socket;
 
+public:
+  ClientStub();
+  int Init(std::string ip, int port);
+  RobotInfo Order(CustomerRequest req);
+  CustomerRecord ReadRecord(CustomerRequest req);
+};
 
 #endif // end of #ifndef __CLIENT_STUB_H__
