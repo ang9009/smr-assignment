@@ -13,7 +13,11 @@ private:
 public:
   ServerStub();
   void Init(std::unique_ptr<ServerSocket> socket);
-  CustomerRequest ReceiveRequest();
+  IDMessage ReceiveIDRequest();
+  CustomerRequest ReceiveCustomerRequest();
+  PrimaryRequest ReceivePrimaryRequest();
+  void AckReplicationComplete(); // Acknowledge that replication has completed
+                                 // to the primary
   int ShipRobot(RobotInfo info);
   int ReturnRecord(CustomerRecord record);
 };

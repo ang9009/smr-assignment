@@ -5,14 +5,13 @@
 
 #include "Socket.h"
 
-
-class ClientSocket: public Socket {
+class ClientSocket : public Socket {
 public:
-	ClientSocket() {}
-	~ClientSocket() {}
+  ClientSocket() {}
+  ~ClientSocket() {}
 
-	int Init(std::string ip, int port);
+  int Init(std::string ip, int port);
+  bool IsInitialized() const;
 };
-
 
 #endif // end of #ifndef __CLIENTSOCKET_H__

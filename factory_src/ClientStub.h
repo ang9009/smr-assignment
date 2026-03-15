@@ -13,6 +13,7 @@ private:
 public:
   ClientStub();
   int Init(std::string ip, int port);
+  void SendIDMessage();
   RobotInfo Order(CustomerRequest req);
   CustomerRecord ReadRecord(CustomerRequest req);
 };

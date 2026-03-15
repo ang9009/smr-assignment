@@ -38,11 +38,10 @@ std::vector<ServerInfo> GetPeersInfo(int num_peers, int my_id, char *argv[],
 
 int main(int argc, char *argv[]) {
   int port;
-  int id;
+  int server_id;
   int num_peers;
 
   ServerSocket socket;
-  RobotFactory factory;
   std::unique_ptr<ServerSocket> new_socket;
   std::vector<std::thread> thread_vector;
 
@@ -54,20 +53,24 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   port = atoi(argv[1]);
-  id = atoi(argv[2]);
+  server_id = atoi(argv[2]);
   num_peers = atoi(argv[3]);
 
+  std::vector<ServerInfo> backups;
   try {
-    std::vector<ServerInfo> peers = GetPeersInfo(num_peers, id, argv, argc);
+    backups = GetPeersInfo(num_peers, server_id, argv, argc);
   } catch (const std::exception &err) {
     printf("Error while getting peer info: %s\n", err.what());
     return 1;
   }
 
+  RobotFactory factory(server_id);
+
   // Initialize admin thread
   int num_admins = 1;
   for (int i = 0; i < num_admins; i++) {
-    std::thread admin_thread(&RobotFactory::AdminThread, &factory, i);
+    std::thread admin_thread(&RobotFactory::AdminThread, &factory, i,
+                             std::move(backups));
     thread_vector.push_back(std::move(admin_thread));
   }
 

@@ -1,9 +1,62 @@
 #ifndef __MESSAGES_H__
 #define __MESSAGES_H__
 
+#include "MapOp.h"
 #include <string>
 
-enum RequestType : int { ORDER = 1, READ = 2, READ_ALL = 3, UNSET = -1 };
+// Identification message type; tells the idle factory admin who is connecting
+enum class IDMessageType : int {
+  PRIMARY = 1, // sender is the primary factory
+  CLIENT = 2,  // sender is a client
+  UNSET = -1
+};
+
+class IDMessage {
+public:
+  IDMessage();
+  IDMessage(IDMessageType type);
+
+  IDMessageType GetType() const;
+
+  int Size() const;
+  void Marshal(char *buffer);
+  void Unmarshal(char *buffer);
+
+private:
+  IDMessageType type;
+};
+
+class PrimaryRequest {
+private:
+  MapOp op;
+  int factory_id;      // ID of the primary
+  int committed_index; // last committed index from primary
+  int last_index;      // last log index from primary
+
+public:
+  PrimaryRequest();
+  PrimaryRequest(MapOp op, int factory_id, int committed_index, int last_index);
+
+  MapOp GetMapOp() const;
+  int GetFactoryId() const;
+  int GetCommittedIndex() const;
+  int GetLastIndex() const;
+  int Size() const;
+
+  void Marshal(char *buffer) const;
+  void Unmarshal(char *buffer);
+};
+
+class ReplicationAck {
+public:
+  ReplicationAck();
+  int Size() const;
+  void Marshal(char *buffer);
+  void Unmarshal(char *buffer);
+
+private:
+  int status; // 1 = success
+};
 
 class CustomerRequest {
 private:

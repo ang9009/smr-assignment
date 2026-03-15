@@ -1,13 +1,25 @@
 #include "ClientStub.h"
-#include <iostream>
+#include "CustomerRequestType.h"
+#include "Messages.h"
 #include <stdexcept>
 
 ClientStub::ClientStub() {}
 
 int ClientStub::Init(std::string ip, int port) { return socket.Init(ip, port); }
 
+void ClientStub::SendIDMessage() {
+  IDMessage msg(IDMessageType::CLIENT);
+  int size = msg.Size();
+  char buffer[size];
+
+  msg.Marshal(buffer);
+  if (!socket.Send(buffer, size, 0)) {
+    throw std::runtime_error("Failed to send ID message");
+  }
+}
+
 RobotInfo ClientStub::Order(CustomerRequest req) {
-  if (req.GetRequestType() != RequestType::ORDER) {
+  if (req.GetRequestType() != CustomerRequestType::ORDER) {
     throw std::runtime_error("Request should be of type order");
   }
 
@@ -33,7 +45,7 @@ RobotInfo ClientStub::Order(CustomerRequest req) {
 }
 
 CustomerRecord ClientStub::ReadRecord(CustomerRequest req) {
-  if (req.GetRequestType() != RequestType::READ) {
+  if (req.GetRequestType() != CustomerRequestType::READ) {
     throw std::runtime_error("Request should be of type read");
   }
 

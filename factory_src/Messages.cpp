@@ -1,8 +1,108 @@
+#include "Messages.h"
+#include "MapOp.h"
+#include <arpa/inet.h>
 #include <cstdio>
 #include <cstring>
 
-#include "Messages.h"
-#include <arpa/inet.h>
+PrimaryRequest::PrimaryRequest()
+    : op{}, factory_id(-1), committed_index(-1), last_index(-1) {}
+
+PrimaryRequest::PrimaryRequest(MapOp op, int factory_id, int committed_index,
+                               int last_index)
+    : op(op), factory_id(factory_id), committed_index(committed_index),
+      last_index(last_index) {}
+
+MapOp PrimaryRequest::GetMapOp() const { return op; }
+
+int PrimaryRequest::GetFactoryId() const { return factory_id; }
+
+int PrimaryRequest::GetCommittedIndex() const { return committed_index; }
+
+int PrimaryRequest::GetLastIndex() const { return last_index; }
+
+int PrimaryRequest::Size() const { return 6 * sizeof(int); }
+
+void PrimaryRequest::Marshal(char *buffer) const {
+  int net_opcode = htonl(op.opcode);
+  int net_arg1 = htonl(op.arg1);
+  int net_arg2 = htonl(op.arg2);
+  int net_factory_id = htonl(factory_id);
+  int net_committed_index = htonl(committed_index);
+  int net_last_index = htonl(last_index);
+  int offset = 0;
+
+  memcpy(buffer + offset, &net_opcode, sizeof(net_opcode));
+  offset += sizeof(net_opcode);
+  memcpy(buffer + offset, &net_arg1, sizeof(net_arg1));
+  offset += sizeof(net_arg1);
+  memcpy(buffer + offset, &net_arg2, sizeof(net_arg2));
+  offset += sizeof(net_arg2);
+  memcpy(buffer + offset, &net_factory_id, sizeof(net_factory_id));
+  offset += sizeof(net_factory_id);
+  memcpy(buffer + offset, &net_committed_index, sizeof(net_committed_index));
+  offset += sizeof(net_committed_index);
+  memcpy(buffer + offset, &net_last_index, sizeof(net_last_index));
+}
+
+void PrimaryRequest::Unmarshal(char *buffer) {
+  int offset = 0;
+  int net_opcode, net_arg1, net_arg2, net_factory_id, net_committed_index,
+      net_last_index;
+
+  memcpy(&net_opcode, buffer + offset, sizeof(net_opcode));
+  offset += sizeof(net_opcode);
+  memcpy(&net_arg1, buffer + offset, sizeof(net_arg1));
+  offset += sizeof(net_arg1);
+  memcpy(&net_arg2, buffer + offset, sizeof(net_arg2));
+  offset += sizeof(net_arg2);
+  memcpy(&net_factory_id, buffer + offset, sizeof(net_factory_id));
+  offset += sizeof(net_factory_id);
+  memcpy(&net_committed_index, buffer + offset, sizeof(net_committed_index));
+  offset += sizeof(net_committed_index);
+  memcpy(&net_last_index, buffer + offset, sizeof(net_last_index));
+
+  op.opcode = static_cast<Opcode>(ntohl(net_opcode));
+  op.arg1 = ntohl(net_arg1);
+  op.arg2 = ntohl(net_arg2);
+  factory_id = ntohl(net_factory_id);
+  committed_index = ntohl(net_committed_index);
+  last_index = ntohl(net_last_index);
+}
+
+ReplicationAck::ReplicationAck() : status(1) {}
+
+int ReplicationAck::Size() const { return sizeof(status); }
+
+void ReplicationAck::Marshal(char *buffer) {
+  int net_status = htonl(status);
+  memcpy(buffer, &net_status, sizeof(net_status));
+}
+
+void ReplicationAck::Unmarshal(char *buffer) {
+  int net_status;
+  memcpy(&net_status, buffer, sizeof(net_status));
+  status = ntohl(net_status);
+}
+
+IDMessage::IDMessage() : type(IDMessageType::UNSET) {}
+
+IDMessage::IDMessage(IDMessageType type) : type(type) {}
+
+IDMessageType IDMessage::GetType() const { return type; }
+
+int IDMessage::Size() const { return sizeof(int); }
+
+void IDMessage::Marshal(char *buffer) {
+  int value = static_cast<int>(type);
+  int net_value = htonl(value);
+  memcpy(buffer, &net_value, sizeof(net_value));
+}
+
+void IDMessage::Unmarshal(char *buffer) {
+  int net_value;
+  memcpy(&net_value, buffer, sizeof(net_value));
+  type = static_cast<IDMessageType>(ntohl(net_value));
+}
 
 CustomerRequest::CustomerRequest() {
   customer_id = -1;
@@ -140,8 +240,8 @@ void RobotInfo::Unmarshal(char *buffer) {
 bool RobotInfo::IsValid() { return (customer_id != -1); }
 
 void RobotInfo::Print() {
-  printf("id %d num %d type %d engid %d admin_id %d\n", customer_id, order_number,
-         robot_type, engineer_id, admin_id);
+  printf("id %d num %d type %d engid %d admin_id %d\n", customer_id,
+         order_number, robot_type, engineer_id, admin_id);
 }
 
 CustomerRecord::CustomerRecord() : customer_id(-1), last_order(-1) {}

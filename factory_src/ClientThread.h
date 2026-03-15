@@ -25,7 +25,7 @@ class ClientThreadClass {
 public:
   ClientThreadClass();
   void ThreadBody(std::string ip, int port, int id, int orders, int type);
-
+  void SendIDRequest();
   ClientTimer GetTimer();
 };
 

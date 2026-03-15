@@ -84,7 +84,7 @@ debug: $(TARGET)
 #    in the folder the make program won't be able to execute the g++ command and
 #    it will look for another rules to create the object (.o) files
 
-server: $(SVR_OBJS) $(CMN_OBJS)
+server: $(SVR_OBJS) $(CMN_OBJS) ClientSocket.o
 	$(CXX) $(LFLAGS) -o $@ $^ 
 
 # This rule defines how to build the server specific object files.
@@ -103,7 +103,6 @@ client: $(CLNT_OBJS) $(CMN_OBJS)
 
 $(CLNT_OBJS): $(CLNT_SRCS) $(CLNT_HDRS)
 	$(CXX) $(CFLAGS) $(DFLAGS) -c $(CLNT_SRCS)
-	
 
 # This rule compiles the common source code into object files.
 $(CMN_OBJS): $(CMN_SRCS) $(CMN_HDRS)
