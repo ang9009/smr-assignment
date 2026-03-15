@@ -4,21 +4,11 @@
 
 #include <cstdio>
 #include <exception>
-#include <stdexcept>
 
 ClientThreadClass::ClientThreadClass() {}
 
 int ClientThreadClass::GetTotalOrdered(int customer_id) {
-  CustomerRecord record;
-  CustomerRequest read_req;
-  read_req.SetRequest(customer_id, -1, CustomerRequestType::READ);
-  try {
-    record = stub.ReadRecord(read_req);
-    record.Print();
-  } catch (std::exception &err) {
-    throw std::runtime_error(std::string("Request failed: ") + err.what());
-  }
-
+  CustomerRecord record = ReadRecord(customer_id);
   int last_order = record.GetLastOrder(); // zero-indexed order num
   return last_order >= 0 ? last_order + 1 : 0;
 }
@@ -47,22 +37,10 @@ bool ClientThreadClass::DoOrder(int customer_id, int order_num) {
   return true;
 }
 
-bool ClientThreadClass::DoReadRecord(int customer_id) {
+CustomerRecord ClientThreadClass::ReadRecord(int customer_id) {
   CustomerRequest req;
-  int order_num = -1; // order num isn't necessary here
-  req.SetRequest(customer_id, order_num, CustomerRequestType::READ);
-
-  timer.Start();
-  try {
-    CustomerRecord record = stub.ReadRecord(req);
-    record.Print();
-  } catch (std::exception &err) {
-    printf("Request failed: %s\n", err.what());
-    return false;
-  }
-  timer.EndAndMerge();
-
-  return true;
+  req.SetRequest(customer_id, -1, CustomerRequestType::READ);
+  return stub.ReadRecord(req);
 }
 
 void ClientThreadClass::ThreadBody(std::string ip, int port, int id, int orders,
@@ -82,31 +60,36 @@ void ClientThreadClass::ThreadBody(std::string ip, int port, int id, int orders,
     return;
   }
 
-  // Read current latest order number
-  // ! NOTE: if clients are allowed to make orders for each other, this will
-  // ! break due to race conditions with the latest order number
-  int total_ordered;
-  try {
-    total_ordered = GetTotalOrdered(customer_id);
-  } catch (std::exception &err) {
-    printf("Failed get total num of orders: %s\n", err.what());
-    return;
-  }
-
   for (int i = 0; i < num_orders; i++) {
     if (request_type == CustomerRequestType::ORDER) {
+      int total_ordered = 0;
+      try {
+        total_ordered = GetTotalOrdered(customer_id);
+      } catch (std::exception &err) {
+        printf("Failed get total num of orders: %s\n", err.what());
+        return;
+      }
       int order_num = total_ordered + i;
       // printf("Order number: %d\n", order_num);
       if (!DoOrder(customer_id, order_num)) {
         break;
       }
     } else if (request_type == CustomerRequestType::READ) {
-      if (!DoReadRecord(customer_id)) {
+      try {
+        ReadRecord(customer_id).Print();
+      } catch (std::exception &err) {
+        printf("Request failed: %s\n", err.what());
         break;
       }
     } else if (request_type == CustomerRequestType::READ_ALL) {
       int cid = i; // In this case, i is the customer id
-      if (!DoReadRecord(cid)) {
+      try {
+        CustomerRecord record = ReadRecord(cid);
+        if (record.GetCustomerId() != -1) {
+          printf("%d\t%d\n", record.GetCustomerId(), record.GetLastOrder());
+        }
+      } catch (std::exception &err) {
+        printf("Request failed: %s\n", err.what());
         break;
       }
     } else {

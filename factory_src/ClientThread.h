@@ -7,6 +7,7 @@
 
 #include "ClientStub.h"
 #include "ClientTimer.h"
+#include "Messages.h"
 
 class ClientThreadClass {
   int customer_id;
@@ -19,7 +20,7 @@ class ClientThreadClass {
   DoOrder(int customer_id,
           int order_num); // order_num should be the accumulative, zero-indexed
                           // order number, not the one in the current session
-  bool DoReadRecord(int customer_id);
+  CustomerRecord ReadRecord(int customer_id);
   int GetTotalOrdered(int customer_id); // returns -1 on order
 
 public:
