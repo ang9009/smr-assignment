@@ -26,7 +26,7 @@ private:
   std::map<int, int> customer_record;
   std::mutex record_lock;
   std::vector<MapOp> smr_log; // only admin (PFA) or IFA thread writes
-  uint32_t last_index;        // the last index of the smr_log that has data
+  unsigned last_index;        // the last index of the smr_log that has data
   int committed_index; // the last index of the smr_log where the MapOp of the
                        // log entry is committed and applied to the
                        // customer_record. Initially set to -1.

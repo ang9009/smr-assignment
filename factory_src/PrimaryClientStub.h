@@ -11,7 +11,9 @@ private:
 
 public:
   PrimaryClientStub(std::vector<ServerInfo> backups);
-  void ConnectToBackups();
+  bool ConnectToBackup(ServerInfo &backup);
   void SendIDMessage();
   void SendReplicationRequests(const PrimaryRequest &req);
+  void ReconnectToBackups(const std::vector<MapOp> &smr_log, int primary_id,
+                          int committed_index);
 };

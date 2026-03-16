@@ -61,9 +61,6 @@ void RobotFactory::HandleCustomerRequest(ServerStub &stub,
                                          CustomerRequest &order,
                                          int engineer_id) {
   int request_type = order.GetRequestType();
-  printf(
-      "Received order from customer id: %d, request type: %d, order id: %d\n",
-      order.GetCustomerId(), request_type, order.GetOrderNumber());
 
   switch (request_type) {
   case CustomerRequestType::ORDER: {
@@ -77,7 +74,7 @@ void RobotFactory::HandleCustomerRequest(ServerStub &stub,
     break;
   }
   default:
-    std::cout << "Undefined request type: " << request_type << std::endl;
+    break;
   }
 }
 
@@ -87,7 +84,6 @@ void RobotFactory::HandlePrimaryRequest(const ServerStub &stub,
   if (primary_id != incoming_id) {
     primary_id = incoming_id;
   }
-  printf("Received primary request from factory %d\n", primary_id);
 
   // Update log
   MapOp op = req.GetMapOp();
@@ -117,11 +113,9 @@ void RobotFactory::HandlePrimaryRequest(const ServerStub &stub,
     break;
   }
   default:
-    fprintf(stderr, "Got unrecognized opcode %d\n", committed_op.opcode);
     break;
   }
   committed_index = new_committed_idx;
-  printf("Committed index %d\n", committed_index);
 }
 
 void RobotFactory::EngineerThread(std::unique_ptr<ServerSocket> socket,
@@ -132,10 +126,8 @@ void RobotFactory::EngineerThread(std::unique_ptr<ServerSocket> socket,
   ServerStub stub;
 
   stub.Init(std::move(socket));
-  // Determine thread type
   IDMessage id_msg = stub.ReceiveIDRequest();
   IDMessageType type = id_msg.GetType();
-  printf("Received ID request, type %d\n", static_cast<int>(type));
 
   // Handle requests based on thread type
   while (true) {
@@ -153,11 +145,11 @@ void RobotFactory::EngineerThread(std::unique_ptr<ServerSocket> socket,
         HandlePrimaryRequest(stub, primary_req);
         stub.AckReplicationComplete();
       } catch (std::exception &err) {
-        printf("Failed to handle primary request: %s\n", err.what());
+        // Primary failed
+        primary_id = -1;
         break;
       }
     } else {
-      printf("Received unknown request type %d\n", static_cast<int>(type));
       break;
     }
   }
@@ -182,11 +174,18 @@ void RobotFactory::AdminThread(int id, std::vector<ServerInfo> backups) {
       primary_id = factory_id;
     }
 
-    try {
-      stub.ConnectToBackups();
-    } catch (std::exception &err) {
-      printf("Failed to connect to backups: %s\n", err.what());
-      continue;
+    // Apply pending log entry if this was a backup with uncommitted data
+    bool was_backup = committed_index < static_cast<int>(last_index);
+    if (was_backup && static_cast<unsigned>(last_index) < smr_log.size()) {
+      committed_index = static_cast<int>(last_index);
+      {
+        std::lock_guard<std::mutex> lg(record_lock);
+        MapOp &apply_op = smr_log[last_index];
+        if (apply_op.opcode == Opcode::UPDATE_MAP) {
+          customer_record[apply_op.arg1] = apply_op.arg2;
+        }
+      }
+      last_index++;
     }
 
     RobotInfo robot = req->robot;
@@ -203,9 +202,9 @@ void RobotFactory::AdminThread(int id, std::vector<ServerInfo> backups) {
     PrimaryRequest replic_req(op, factory_id, committed_index,
                               static_cast<int>(written_index));
     try {
+      stub.ReconnectToBackups(smr_log, factory_id, committed_index);
       stub.SendReplicationRequests(replic_req);
     } catch (std::exception &err) {
-      printf("Failed to send replication requests: %s\n", err.what());
       continue;
     }
 

@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
   if (argc < 4) {
     std::cout << "expected at least 3 arguments" << std::endl;
     std::cout << argv[0]
-              << "[port #] [unique ID] [# peers] (repeat [ID] [IP] [port #])"
+              << " [port #] [unique ID] [# peers] (repeat [ID] [IP] [port #])"
               << std::endl;
     return 1;
   }

@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
 
   if (argc < 6) {
     std::cout << "not enough arguments" << std::endl;
-    std::cout << argv[0] << "[ip] [port #] [# customers] ";
+    std::cout << argv[0] << " [ip] [port #] [# customers] ";
     std::cout << "[# orders] [request type 1, 2, or 3]" << std::endl;
     return 0;
   }
